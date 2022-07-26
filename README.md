@@ -22,3 +22,44 @@ Construir uma aplicação web com algumas funções essenciais relacionadas ao g
 * Legibilidade do código (nomenclatura de classes, métodos e variáveis, lint, etc)
 * Implementação de testes que garantam que o código está atendendo os requisitos
 * Documentação (histórico de commits no git, readme, diagramas, etc)
+
+## Solução
+
+### Requisitos
+
+1. Node@>=16
+2. Npm@>6
+3. Docker
+4. Docker Compose
+
+Rode o comando `docker compose up -d` para rodar a API e o banco de dados.
+
+### Arquitetura
+
+![Arquitetura](images/arquitetura.png)
+
+**Controller**: Responsável por validar a requisição, repassar para o serviço de domínio correto e entregar a resposta ao cliente.
+
+**Service**: Responsável por aplicar as regras de negócio.
+
+**Repository**: Responsável pela persistência de dados
+
+### Documentação da API
+
+Acesse http://localhost:3000/docs
+
+![Docs](images/docs.png)
+
+### Testes
+
+Rode o comando `npm run test:coverage`
+
+![Testes](images/testes.png)
+
+### Modelagem do banco de dados
+
+![Database](images/database.png)
+
+### Passo a passo para implementação
+
+[Clique aqui](passo-a-passo.md)
