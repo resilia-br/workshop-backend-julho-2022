@@ -363,11 +363,15 @@ export class BankAccountRepository implements BankAccountRepositoryInterface {
   }
 
   async findById (id: number): Promise<BankAccount | null> {
-    //TODO
+    return await this.repository.findOne({
+      where: {
+        id
+      }
+    })
   }
 
   async saveAll (data: Array<{ name: string, cpf: string, amount: number }>): Promise<BankAccount[]> {
-    //TODO
+    return await this.repository.save(data)
   }
 }
 
@@ -395,7 +399,7 @@ export class BankDepositRepository implements BankDepositRepositoryInterface {
   constructor (private readonly repository = AppDataSource.getRepository(BankDeposit)) {}
 
   async save (data: { accountId: number, amount: number }): Promise<BankDeposit> {
-    //TODO
+    return await this.repository.save(data)
   }
 }
 
@@ -423,7 +427,7 @@ export class BankTransferRepository implements BankTransferRepositoryInterface {
   constructor (private readonly repository = AppDataSource.getRepository(BankTransfer)) {}
 
   async save (data: { originAccountId: number, destinationAccountId: number, amount: number }): Promise<BankTransfer> {
-    //TODO
+    return await this.repository.save(data)
   }
 }
 
@@ -503,15 +507,59 @@ export class BankAccountService implements BankAccountServiceInterface {
   }
 
   async createAccount (params: CreateBankAccountDTO): Promise<BankAccount> {
-    //TODO
+    const account = await this.accountRepository.findByCpf(params.cpf)
+
+    if (account != null) {
+      throw new Error('Conta já existe para esse CPF')
+    }
+
+    return await this.accountRepository.save({ ...params, amount: 0 })
   }
 
   async transfer (params: BankTransferDTO): Promise<void> {
-    //TODO
+    const originAccount = await this.accountRepository.findById(params.originAccountId)
+
+    if (originAccount == null) {
+      throw new Error('Conta origem inválida')
+    }
+    if (originAccount.amount < params.amount) {
+      throw new Error('Valor de transferência maior que o saldo da conta origem')
+    }
+
+    const destinationAccount = await this.accountRepository.findById(params.destinationAccountId)
+
+    if (destinationAccount == null) {
+      throw new Error('Conta destino inválida')
+    }
+
+    originAccount.amount -= params.amount
+    destinationAccount.amount += params.amount
+
+    await this.accountRepository.saveAll([originAccount, destinationAccount])
+
+    await this.transferRepository.save({
+      originAccountId: params.originAccountId,
+      destinationAccountId: params.destinationAccountId,
+      amount: params.amount
+    })
   }
 
   async deposit (params: BankDepositDTO): Promise<void> {
-    //TODO
+    if (params.amount > 5000) {
+      throw new Error('Valor do depósito não pode ser maior do que R$5.000')
+    }
+
+    const account = await this.accountRepository.findById(params.accountId)
+
+    if (account == null) {
+      throw new Error('Conta inválida')
+    }
+
+    account.amount += params.amount
+
+    await this.accountRepository.save(account)
+
+    await this.depositRepository.save({ accountId: account.id, amount: params.amount })
   }
 }
 
@@ -564,7 +612,17 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if an account already exists', async () => {
-      //TODO
+      accountRepository.findByCpf.mockResolvedValueOnce({
+        id: 1,
+        name: 'any_name',
+        cpf: 'any_cpf',
+        amount: 10,
+        createdAt: new Date()
+      })
+
+      const promise = sut.createAccount(createAccountParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call save with correct values', async () => {
@@ -575,7 +633,9 @@ describe('Bank Account Service', () => {
     })
 
     it('Should return created account on success', async () => {
-      //TODO
+      const response = await sut.createAccount(createAccountParams)
+
+      expect(response).toEqual(saveAccountResponse)
     })
   })
 
@@ -638,15 +698,41 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if origin account was not found', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce(null)
+
+      const promise = sut.transfer(transferParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should throw if amount of origin account is lower than amount transfered', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce({
+        id: 1,
+        name: 'any_name',
+        cpf: 'any_cpf',
+        amount: 10,
+        createdAt: new Date()
+      })
+
+      const promise = sut.transfer(transferParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should throw if destination account was not found', async () => {
-      //TODO
+      accountRepository.findById
+        .mockResolvedValueOnce({
+          id: 1,
+          name: 'any_name',
+          cpf: 'any_cpf',
+          amount: 30,
+          createdAt: new Date()
+        })
+        .mockResolvedValueOnce(null)
+
+      const promise = sut.transfer(transferParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call saveAll with updateds amount', async () => {
@@ -664,7 +750,9 @@ describe('Bank Account Service', () => {
     })
 
     it('Should call save with correct values', async () => {
-      //TODO
+      await sut.transfer(transferParams)
+
+      expect(transferRepository.save).toHaveBeenCalledWith({ originAccountId: transferParams.originAccountId, destinationAccountId: transferParams.destinationAccountId, amount: transferParams.amount })
     })
   })
 
@@ -701,7 +789,9 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if amount is greater than R$5.000', async () => {
-      //TODO
+      const promise = sut.deposit({ ...depositParams, amount: 5001 })
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call findById with correct value', async () => {
@@ -712,15 +802,32 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if account was not found', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce(null)
+
+      const promise = sut.deposit(depositParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call saveAll with updated amount', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce({
+        id: 1,
+        name: 'any_name',
+        cpf: 'any_cpf',
+        amount: 30,
+        createdAt: new Date()
+      })
+
+      await sut.deposit(depositParams)
+
+      expect(accountRepository.save).toHaveBeenCalledTimes(1)
+      expect(accountRepository.save).toHaveBeenCalledWith({ ...findByIdResponse, amount: 60 })
     })
 
     it('Should call save with correct values', async () => {
-      //TODO
+      await sut.deposit(depositParams)
+
+      expect(depositRepository.save).toHaveBeenCalledWith({ accountId: depositParams.accountId, amount: depositParams.amount })
     })
   })
 })
@@ -766,7 +873,13 @@ export class BankAccountController {
 
   async transfer (req: Request, res: Response): Promise<Response> {
     try {
-      //TODO
+      const { originAccountId, destinationAccountId, amount } = req.body
+
+      if (!originAccountId || !destinationAccountId || !amount || amount < 0) {
+        return res.status(400).send({ message: 'Parametros invalidos' })
+      }
+
+      await this.accountService.transfer({ originAccountId, destinationAccountId, amount })
 
       return res.status(204).send()
     } catch (error) {
@@ -781,7 +894,13 @@ export class BankAccountController {
 
   async deposit (req: Request, res: Response): Promise<Response> {
     try {
-      //TODO
+      const { accountId, amount } = req.body
+
+      if (!accountId || !amount || amount < 0) {
+        return res.status(400).send({ message: 'Parametros invalidos' })
+      }
+
+      await this.accountService.deposit({ accountId, amount })
 
       return res.status(204).send()
     } catch (error) {
@@ -1228,7 +1347,12 @@ describe('Account Routes', () => {
     })
 
     it('Should return 201 and created account on success', async () => {
-      //TODO
+      const { status, body } = await request(app)
+        .post('/api/accounts')
+        .send(requestBody)
+
+      expect(status).toBe(201)
+      expect(body).toEqual(saveAccountResponse)
     })
   })
 
@@ -1282,7 +1406,12 @@ describe('Account Routes', () => {
     })
 
     it('Should return 204 on success', async () => {
-      //TODO
+      const { status, body } = await request(app)
+        .post('/api/accounts/transfer')
+        .send(requestBody)
+
+      expect(status).toBe(204)
+      expect(body).toEqual({})
     })
   })
 
@@ -1334,7 +1463,12 @@ describe('Account Routes', () => {
     })
 
     it('Should return 204 on success', async () => {
-      //TODO
+      const { status, body } = await request(app)
+        .post('/api/accounts/deposit')
+        .send(requestBody)
+
+      expect(status).toBe(204)
+      expect(body).toEqual({})
     })
   })
 })

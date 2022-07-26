@@ -32,7 +32,13 @@ export class BankAccountController {
 
   async transfer (req: Request, res: Response): Promise<Response> {
     try {
-      //TODO
+      const { originAccountId, destinationAccountId, amount } = req.body
+
+      if (!originAccountId || !destinationAccountId || !amount || amount < 0) {
+        return res.status(400).send({ message: 'Parametros invalidos' })
+      }
+
+      await this.accountService.transfer({ originAccountId, destinationAccountId, amount })
 
       return res.status(204).send()
     } catch (error) {
@@ -47,7 +53,13 @@ export class BankAccountController {
 
   async deposit (req: Request, res: Response): Promise<Response> {
     try {
-      //TODO
+      const { accountId, amount } = req.body
+
+      if (!accountId || !amount || amount < 0) {
+        return res.status(400).send({ message: 'Parametros invalidos' })
+      }
+
+      await this.accountService.deposit({ accountId, amount })
 
       return res.status(204).send()
     } catch (error) {

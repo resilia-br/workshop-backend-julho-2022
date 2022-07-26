@@ -18,10 +18,14 @@ export class BankAccountRepository implements BankAccountRepositoryInterface {
   }
 
   async findById (id: number): Promise<BankAccount | null> {
-    //TODO
+    return await this.repository.findOne({
+      where: {
+        id
+      }
+    })
   }
 
   async saveAll (data: Array<{ name: string, cpf: string, amount: number }>): Promise<BankAccount[]> {
-    //TODO
+    return await this.repository.save(data)
   }
 }

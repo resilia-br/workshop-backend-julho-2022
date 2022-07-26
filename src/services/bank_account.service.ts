@@ -22,14 +22,58 @@ export class BankAccountService implements BankAccountServiceInterface {
   }
 
   async createAccount (params: CreateBankAccountDTO): Promise<BankAccount> {
-    //TODO
+    const account = await this.accountRepository.findByCpf(params.cpf)
+
+    if (account != null) {
+      throw new Error('Conta já existe para esse CPF')
+    }
+
+    return await this.accountRepository.save({ ...params, amount: 0 })
   }
 
   async transfer (params: BankTransferDTO): Promise<void> {
-    //TODO
+    const originAccount = await this.accountRepository.findById(params.originAccountId)
+
+    if (originAccount == null) {
+      throw new Error('Conta origem inválida')
+    }
+    if (originAccount.amount < params.amount) {
+      throw new Error('Valor de transferência maior que o saldo da conta origem')
+    }
+
+    const destinationAccount = await this.accountRepository.findById(params.destinationAccountId)
+
+    if (destinationAccount == null) {
+      throw new Error('Conta destino inválida')
+    }
+
+    originAccount.amount -= params.amount
+    destinationAccount.amount += params.amount
+
+    await this.accountRepository.saveAll([originAccount, destinationAccount])
+
+    await this.transferRepository.save({
+      originAccountId: params.originAccountId,
+      destinationAccountId: params.destinationAccountId,
+      amount: params.amount
+    })
   }
 
   async deposit (params: BankDepositDTO): Promise<void> {
-    //TODO
+    if (params.amount > 5000) {
+      throw new Error('Valor do depósito não pode ser maior do que R$5.000')
+    }
+
+    const account = await this.accountRepository.findById(params.accountId)
+
+    if (account == null) {
+      throw new Error('Conta inválida')
+    }
+
+    account.amount += params.amount
+
+    await this.accountRepository.save(account)
+
+    await this.depositRepository.save({ accountId: account.id, amount: params.amount })
   }
 }

@@ -77,7 +77,12 @@ describe('Account Routes', () => {
     })
 
     it('Should return 201 and created account on success', async () => {
-      //TODO
+      const { status, body } = await request(app)
+        .post('/api/accounts')
+        .send(requestBody)
+
+      expect(status).toBe(201)
+      expect(body).toEqual(saveAccountResponse)
     })
   })
 
@@ -131,7 +136,12 @@ describe('Account Routes', () => {
     })
 
     it('Should return 204 on success', async () => {
-      //TODO
+      const { status, body } = await request(app)
+        .post('/api/accounts/transfer')
+        .send(requestBody)
+
+      expect(status).toBe(204)
+      expect(body).toEqual({})
     })
   })
 
@@ -183,7 +193,12 @@ describe('Account Routes', () => {
     })
 
     it('Should return 204 on success', async () => {
-      //TODO
+      const { status, body } = await request(app)
+        .post('/api/accounts/deposit')
+        .send(requestBody)
+
+      expect(status).toBe(204)
+      expect(body).toEqual({})
     })
   })
 })

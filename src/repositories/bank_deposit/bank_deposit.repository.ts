@@ -6,6 +6,6 @@ export class BankDepositRepository implements BankDepositRepositoryInterface {
   constructor (private readonly repository = AppDataSource.getRepository(BankDeposit)) {}
 
   async save (data: { accountId: number, amount: number }): Promise<BankDeposit> {
-    //TODO
+    return await this.repository.save(data)
   }
 }

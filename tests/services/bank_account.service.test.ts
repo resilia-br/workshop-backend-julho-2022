@@ -40,7 +40,17 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if an account already exists', async () => {
-      //TODO
+      accountRepository.findByCpf.mockResolvedValueOnce({
+        id: 1,
+        name: 'any_name',
+        cpf: 'any_cpf',
+        amount: 10,
+        createdAt: new Date()
+      })
+
+      const promise = sut.createAccount(createAccountParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call save with correct values', async () => {
@@ -51,7 +61,9 @@ describe('Bank Account Service', () => {
     })
 
     it('Should return created account on success', async () => {
-      //TODO
+      const response = await sut.createAccount(createAccountParams)
+
+      expect(response).toEqual(saveAccountResponse)
     })
   })
 
@@ -114,15 +126,41 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if origin account was not found', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce(null)
+
+      const promise = sut.transfer(transferParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should throw if amount of origin account is lower than amount transfered', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce({
+        id: 1,
+        name: 'any_name',
+        cpf: 'any_cpf',
+        amount: 10,
+        createdAt: new Date()
+      })
+
+      const promise = sut.transfer(transferParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should throw if destination account was not found', async () => {
-      //TODO
+      accountRepository.findById
+        .mockResolvedValueOnce({
+          id: 1,
+          name: 'any_name',
+          cpf: 'any_cpf',
+          amount: 30,
+          createdAt: new Date()
+        })
+        .mockResolvedValueOnce(null)
+
+      const promise = sut.transfer(transferParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call saveAll with updateds amount', async () => {
@@ -140,7 +178,9 @@ describe('Bank Account Service', () => {
     })
 
     it('Should call save with correct values', async () => {
-      //TODO
+      await sut.transfer(transferParams)
+
+      expect(transferRepository.save).toHaveBeenCalledWith({ originAccountId: transferParams.originAccountId, destinationAccountId: transferParams.destinationAccountId, amount: transferParams.amount })
     })
   })
 
@@ -177,7 +217,9 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if amount is greater than R$5.000', async () => {
-      //TODO
+      const promise = sut.deposit({ ...depositParams, amount: 5001 })
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call findById with correct value', async () => {
@@ -188,15 +230,32 @@ describe('Bank Account Service', () => {
     })
 
     it('Should throw if account was not found', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce(null)
+
+      const promise = sut.deposit(depositParams)
+
+      await expect(promise).rejects.toThrow()
     })
 
     it('Should call saveAll with updated amount', async () => {
-      //TODO
+      accountRepository.findById.mockResolvedValueOnce({
+        id: 1,
+        name: 'any_name',
+        cpf: 'any_cpf',
+        amount: 30,
+        createdAt: new Date()
+      })
+
+      await sut.deposit(depositParams)
+
+      expect(accountRepository.save).toHaveBeenCalledTimes(1)
+      expect(accountRepository.save).toHaveBeenCalledWith({ ...findByIdResponse, amount: 60 })
     })
 
     it('Should call save with correct values', async () => {
-      //TODO
+      await sut.deposit(depositParams)
+
+      expect(depositRepository.save).toHaveBeenCalledWith({ accountId: depositParams.accountId, amount: depositParams.amount })
     })
   })
 })
