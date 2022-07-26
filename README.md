@@ -32,7 +32,12 @@ Construir uma aplicação web com algumas funções essenciais relacionadas ao g
 3. Docker
 4. Docker Compose
 
-Rode o comando `docker compose up -d` para rodar a API e o banco de dados.
+### Como Rodar
+
+1. Rode o comando `npm install`
+2. Rode o comando `docker compose up` para rodar a API e o banco de dados pelo docker.
+
+> O hot reload está habilitado, ou seja, ao salvar um arquivo o projeto sera atualizado automaticamente sem precisar rodar o docker novamente
 
 ### Arquitetura
 
